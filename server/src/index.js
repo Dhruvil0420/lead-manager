@@ -12,10 +12,14 @@ const startServer = async () => {
   // Connect to MongoDB
   await connectDB();
 
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  }
 };
 
 startServer();
+
+module.exports = app;
 
