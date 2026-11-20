@@ -18,6 +18,7 @@ export const useLeads = () => {
     Lost: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Fetch leads with query params (search, filter, sort, page, limit)
@@ -41,11 +42,14 @@ export const useLeads = () => {
 
   // Fetch status breakdown stats
   const fetchStats = useCallback(async () => {
+    setStatsLoading(true);
     try {
       const res = await api.get('/leads/stats');
       setStats(res.data.data);
     } catch (err) {
       console.error('Failed to load stats:', err);
+    } finally {
+      setStatsLoading(false);
     }
   }, []);
 
@@ -74,6 +78,7 @@ export const useLeads = () => {
     pagination,
     stats,
     loading,
+    statsLoading,
     error,
     fetchLeads,
     fetchStats,
@@ -82,4 +87,3 @@ export const useLeads = () => {
     deleteLead,
   };
 };
-

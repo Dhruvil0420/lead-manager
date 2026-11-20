@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLeads } from '../hooks/useLeads';
 import { useDebounce } from '../hooks/useDebounce';
+import StatCards from '../components/StatCards';
 import StatusBadge from '../components/StatusBadge';
 import LeadFormModal from '../components/LeadFormModal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -11,8 +12,11 @@ const Dashboard = () => {
   const {
     leads,
     pagination,
+    stats,
     loading,
+    statsLoading,
     fetchLeads,
+    fetchStats,
     createLead,
     updateLead,
     deleteLead,
@@ -38,6 +42,11 @@ const Dashboard = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Initial load: fetch stats once on mount
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Reset to page 1 when search or status filter changes (after initial render)
   useEffect(() => {
@@ -87,6 +96,15 @@ const Dashboard = () => {
     fetchLeads(params);
   };
 
+  // Stat card filter toggle: clicking the same active card toggles back to All
+  const handleCardFilterSelect = (selectedStatus) => {
+    if (statusFilter === selectedStatus) {
+      setStatusFilter('');
+    } else {
+      setStatusFilter(selectedStatus);
+    }
+  };
+
   // Sort toggle handler
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -112,7 +130,7 @@ const Dashboard = () => {
     );
   };
 
-  // Form submit (Add or Edit)
+  // Form submit (Add or Edit) -> refreshes leads and stats
   const handleFormSubmit = async (formData) => {
     if (selectedLead) {
       await updateLead(selectedLead._id, formData);
@@ -120,9 +138,10 @@ const Dashboard = () => {
       await createLead(formData);
     }
     refreshLeads();
+    fetchStats();
   };
 
-  // Confirmed Delete (handles fallback to previous page if last item on page is deleted)
+  // Confirmed Delete -> refreshes leads and stats
   const handleConfirmDelete = async () => {
     if (!selectedLead) return;
     setDeleteLoading(true);
@@ -137,6 +156,7 @@ const Dashboard = () => {
       } else {
         refreshLeads();
       }
+      fetchStats();
     } finally {
       setDeleteLoading(false);
     }
@@ -162,8 +182,10 @@ const Dashboard = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Leads</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage and track your prospect pipeline</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Leads Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Real-time pipeline overview, lead statistics, and management
+          </p>
         </div>
         <button
           onClick={() => {
@@ -178,6 +200,14 @@ const Dashboard = () => {
           Add Lead
         </button>
       </div>
+
+      {/* Stat Cards Section */}
+      <StatCards
+        stats={stats}
+        activeFilter={statusFilter}
+        onSelectFilter={handleCardFilterSelect}
+        loading={statsLoading}
+      />
 
       {/* Controls: Search and Filter Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -207,7 +237,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Status Filter */}
+        {/* Status Filter Dropdown */}
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium text-slate-500 whitespace-nowrap">
             Status:
@@ -282,14 +312,33 @@ const Dashboard = () => {
             </thead>
             <tbody className="divide-y divide-slate-200 text-sm">
               {loading ? (
-                <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                      Loading leads...
-                    </div>
-                  </td>
-                </tr>
+                // Skeleton loading rows
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={idx} className="animate-pulse">
+                    <td className="py-4 px-4 sm:px-6">
+                      <div className="h-4 bg-slate-200 rounded w-28"></div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="h-4 bg-slate-200 rounded w-36 mb-1.5"></div>
+                      <div className="h-3 bg-slate-100 rounded w-24"></div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="h-4 bg-slate-200 rounded w-24"></div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="h-4 bg-slate-200 rounded w-16"></div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="h-5 bg-slate-200 rounded-full w-20"></div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="h-4 bg-slate-200 rounded w-20"></div>
+                    </td>
+                    <td className="py-4 px-4 sm:px-6 text-right">
+                      <div className="h-6 bg-slate-200 rounded w-16 ml-auto"></div>
+                    </td>
+                  </tr>
+                ))
               ) : leads.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="py-16 text-center text-slate-500">
@@ -401,7 +450,6 @@ const Dashboard = () => {
             {/* Page number buttons */}
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((p) => {
-                // Show smart window: always show 1, last, and pages adjacent to current page
                 if (
                   p === 1 ||
                   p === totalPages ||
