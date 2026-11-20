@@ -1,7 +1,8 @@
 // Reusable Zod validation middleware adhering to standard error shape:
 // { "message": string, "errors": [{ "field": string, "message": string }] }
-const validate = (schema) => (req, res, next) => {
-  const result = schema.safeParse(req.body);
+// source can be 'body', 'query', or 'params'
+const validate = (schema, source = 'body') => (req, res, next) => {
+  const result = schema.safeParse(req[source]);
 
   if (!result.success) {
     const rawIssues = result.error.issues || result.error.errors || [];
@@ -16,8 +17,8 @@ const validate = (schema) => (req, res, next) => {
     });
   }
 
-  // Assign validated and sanitized data back to req.body
-  req.body = result.data;
+  // Assign validated and sanitized data back to req[source]
+  req[source] = result.data;
   next();
 };
 
