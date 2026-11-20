@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+
+const leadRoutes = require('./routes/leadRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -26,6 +28,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// API Routes
+app.use('/api/leads', leadRoutes);
+
 // 404 Catch-all for unhandled routes
 app.use(notFoundHandler);
 
@@ -33,4 +38,3 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 module.exports = app;
-
