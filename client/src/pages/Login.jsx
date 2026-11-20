@@ -52,7 +52,7 @@ const Login = () => {
     setServerError('');
 
     try {
-      await login(formData.email.trim(), formData.password);
+      await login(formData.email.trim().toLowerCase(), formData.password);
       toast.success('Welcome back!');
       navigate('/');
     } catch (err) {
@@ -147,4 +147,3 @@ const Login = () => {
 };
 
 export default Login;
-

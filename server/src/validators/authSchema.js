@@ -1,5 +1,6 @@
 const { z } = require('zod');
 
+// Signup validation schema: requires name, valid email, and minimum 6 character password
 const signupSchema = z.object({
   name: z
     .string({ required_error: 'Name is required' })
@@ -12,9 +13,10 @@ const signupSchema = z.object({
     .toLowerCase(),
   password: z
     .string({ required_error: 'Password is required' })
-    .min(8, 'Password must be at least 8 characters'),
+    .min(6, 'Password must be at least 6 characters'),
 });
 
+// Login validation schema: requires valid email and non-empty password
 const loginSchema = z.object({
   email: z
     .string({ required_error: 'Email is required' })
@@ -30,4 +32,3 @@ module.exports = {
   signupSchema,
   loginSchema,
 };
-

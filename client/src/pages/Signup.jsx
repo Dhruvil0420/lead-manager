@@ -42,8 +42,8 @@ const Signup = () => {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -58,7 +58,11 @@ const Signup = () => {
     setServerError('');
 
     try {
-      await signup(formData.name.trim(), formData.email.trim(), formData.password);
+      await signup(
+        formData.name.trim(),
+        formData.email.trim().toLowerCase(),
+        formData.password
+      );
       toast.success('Account created successfully!');
       navigate('/');
     } catch (err) {
@@ -132,7 +136,7 @@ const Signup = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Minimum 8 characters"
+              placeholder="Minimum 6 characters"
               className={`w-full px-3.5 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 ${
                 errors.password
                   ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
@@ -170,4 +174,3 @@ const Signup = () => {
 };
 
 export default Signup;
-

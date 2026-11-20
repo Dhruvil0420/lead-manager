@@ -12,9 +12,10 @@ const generateToken = (userId) => {
 const signup = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({
         message: 'Email already exists',
@@ -23,8 +24,8 @@ const signup = async (req, res, next) => {
     }
 
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       password,
     });
 
@@ -52,9 +53,10 @@ const signup = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
     // Password has select: false in schema, so explicitly include it here
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({
@@ -96,4 +98,3 @@ module.exports = {
   login,
   getMe,
 };
-
