@@ -42,11 +42,11 @@ const leadSchema = new mongoose.Schema(
       },
       default: 'New',
     },
-    // User reference prepared for Part 3 authentication
+    // Scoped strictly to the owning user
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      default: null,
+      required: [true, 'User is required'],
     },
   },
   {
@@ -54,7 +54,7 @@ const leadSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for fast querying, filtering, and sorting
+// Indexes for fast querying, filtering, and sorting scoped to the user
 leadSchema.index({ user: 1, status: 1 });
 leadSchema.index({ user: 1, createdAt: -1 });
 leadSchema.index({ user: 1, name: 1 });
@@ -67,4 +67,3 @@ module.exports = {
   LEAD_SOURCES,
   LEAD_STATUSES,
 };
-

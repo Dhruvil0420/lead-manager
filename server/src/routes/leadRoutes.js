@@ -3,7 +3,11 @@ const router = express.Router();
 
 const leadController = require('../controllers/leadController');
 const validate = require('../middleware/validate');
+const { protect } = require('../middleware/auth');
 const { createLeadSchema, updateLeadSchema } = require('../validators/leadSchema');
+
+// Protect all lead routes with authentication middleware
+router.use(protect);
 
 // /api/leads
 router
@@ -19,4 +23,3 @@ router
   .delete(leadController.deleteLead);
 
 module.exports = router;
-

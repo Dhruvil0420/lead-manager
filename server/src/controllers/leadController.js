@@ -1,17 +1,13 @@
 const mongoose = require('mongoose');
 const { Lead } = require('../models/Lead');
 
-// POST /api/leads - Create a new lead
+// POST /api/leads - Create a new lead scoped to req.user._id
 const createLead = async (req, res, next) => {
   try {
-    const leadData = { ...req.body };
-
-    // Attach authenticated user ID if present (prepared for Part 3)
-    if (req.user && req.user._id) {
-      leadData.user = req.user._id;
-    }
-
-    const lead = await Lead.create(leadData);
+    const lead = await Lead.create({
+      ...req.body,
+      user: req.user._id, // Enforce ownership from authenticated token
+    });
 
     res.status(201).json({
       message: 'Lead created successfully',
@@ -22,17 +18,10 @@ const createLead = async (req, res, next) => {
   }
 };
 
-// GET /api/leads - List all leads
+// GET /api/leads - List all leads for the authenticated user
 const getLeads = async (req, res, next) => {
   try {
-    const filter = {};
-
-    // Filter by user if authenticated (prepared for Part 3)
-    if (req.user && req.user._id) {
-      filter.user = req.user._id;
-    }
-
-    const leads = await Lead.find(filter).sort({ createdAt: -1 });
+    const leads = await Lead.find({ user: req.user._id }).sort({ createdAt: -1 });
 
     res.status(200).json({
       message: 'Leads fetched successfully',
@@ -44,7 +33,7 @@ const getLeads = async (req, res, next) => {
   }
 };
 
-// GET /api/leads/:id - Fetch single lead by ID
+// GET /api/leads/:id - Fetch single lead owned by the user
 const getLeadById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -56,12 +45,8 @@ const getLeadById = async (req, res, next) => {
       });
     }
 
-    const filter = { _id: id };
-    if (req.user && req.user._id) {
-      filter.user = req.user._id;
-    }
-
-    const lead = await Lead.findOne(filter);
+    // Scoped strictly to req.user._id; returns 404 if not found or owned by another user
+    const lead = await Lead.findOne({ _id: id, user: req.user._id });
 
     if (!lead) {
       return res.status(404).json({
@@ -79,7 +64,7 @@ const getLeadById = async (req, res, next) => {
   }
 };
 
-// PUT /api/leads/:id - Update an existing lead
+// PUT /api/leads/:id - Update an existing lead owned by the user
 const updateLead = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -91,15 +76,18 @@ const updateLead = async (req, res, next) => {
       });
     }
 
-    const filter = { _id: id };
-    if (req.user && req.user._id) {
-      filter.user = req.user._id;
-    }
+    // Ensure user ownership cannot be reassigned via body
+    const updates = { ...req.body };
+    delete updates.user;
 
-    const updatedLead = await Lead.findOneAndUpdate(filter, req.body, {
-      returnDocument: 'after',
-      runValidators: true,
-    });
+    const updatedLead = await Lead.findOneAndUpdate(
+      { _id: id, user: req.user._id },
+      updates,
+      {
+        returnDocument: 'after',
+        runValidators: true,
+      }
+    );
 
     if (!updatedLead) {
       return res.status(404).json({
@@ -117,7 +105,7 @@ const updateLead = async (req, res, next) => {
   }
 };
 
-// DELETE /api/leads/:id - Delete a lead
+// DELETE /api/leads/:id - Delete a lead owned by the user
 const deleteLead = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -129,12 +117,7 @@ const deleteLead = async (req, res, next) => {
       });
     }
 
-    const filter = { _id: id };
-    if (req.user && req.user._id) {
-      filter.user = req.user._id;
-    }
-
-    const deletedLead = await Lead.findOneAndDelete(filter);
+    const deletedLead = await Lead.findOneAndDelete({ _id: id, user: req.user._id });
 
     if (!deletedLead) {
       return res.status(404).json({
