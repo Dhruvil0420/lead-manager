@@ -14,3 +14,4 @@ router.post('/login', validate(loginSchema), authController.login);
 router.get('/me', protect, authController.getMe);
 
 module.exports = router;
+
