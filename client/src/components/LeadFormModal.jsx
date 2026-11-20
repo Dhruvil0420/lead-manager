@@ -17,6 +17,7 @@ const initialFormData = {
 const LeadFormModal = ({ isOpen, onClose, onSubmit, initialLead = null }) => {
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const isEditing = Boolean(initialLead);
@@ -36,6 +37,7 @@ const LeadFormModal = ({ isOpen, onClose, onSubmit, initialLead = null }) => {
       setFormData(initialFormData);
     }
     setErrors({});
+    setServerError('');
   }, [initialLead, isOpen]);
 
   const handleChange = (e) => {
@@ -44,27 +46,42 @@ const LeadFormModal = ({ isOpen, onClose, onSubmit, initialLead = null }) => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
+    setServerError('');
   };
 
   const validate = () => {
     const newErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Exactly matches backend regex rule: /^\+?[0-9\s\-()]{7,20}$/
     const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
 
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name cannot be empty';
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!emailRegex.test(formData.email.trim())) {
       newErrors.email = 'Invalid email address';
     }
+
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
     } else if (!phoneRegex.test(formData.phone.trim())) {
       newErrors.phone = 'Invalid phone number format';
     }
-    if (!formData.company.trim()) newErrors.company = 'Company is required';
-    if (!formData.source) newErrors.source = 'Source is required';
-    if (!formData.status) newErrors.status = 'Status is required';
+
+    if (!formData.company.trim()) {
+      newErrors.company = 'Company cannot be empty';
+    }
+
+    if (!formData.source || !SOURCES.includes(formData.source)) {
+      newErrors.source = `Source must be one of: ${SOURCES.join(', ')}`;
+    }
+
+    if (!formData.status || !STATUSES.includes(formData.status)) {
+      newErrors.status = `Status must be one of: ${STATUSES.join(', ')}`;
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -75,6 +92,7 @@ const LeadFormModal = ({ isOpen, onClose, onSubmit, initialLead = null }) => {
     if (!validate()) return;
 
     setLoading(true);
+    setServerError('');
     try {
       await onSubmit({
         name: formData.name.trim(),
@@ -87,15 +105,15 @@ const LeadFormModal = ({ isOpen, onClose, onSubmit, initialLead = null }) => {
       onClose();
     } catch (err) {
       const data = err.response?.data;
+      // Map server-side validation errors directly into corresponding input field errors
       if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
         const fieldErrors = {};
         data.errors.forEach((e) => {
           fieldErrors[e.field] = e.message;
         });
         setErrors(fieldErrors);
-      } else {
-        toast.error(data?.message || 'Failed to save lead');
       }
+      setServerError(data?.message || 'Failed to save lead. Please check the form.');
     } finally {
       setLoading(false);
     }
@@ -107,6 +125,19 @@ const LeadFormModal = ({ isOpen, onClose, onSubmit, initialLead = null }) => {
       onClose={onClose}
       title={isEditing ? 'Edit Lead' : 'Add New Lead'}
     >
+      {serverError && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 flex items-center justify-between">
+          <span>{serverError}</span>
+          <button
+            type="button"
+            onClick={() => setServerError('')}
+            className="text-red-400 hover:text-red-600 font-bold ml-2"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -252,4 +283,3 @@ const LeadFormModal = ({ isOpen, onClose, onSubmit, initialLead = null }) => {
 };
 
 export default LeadFormModal;
-

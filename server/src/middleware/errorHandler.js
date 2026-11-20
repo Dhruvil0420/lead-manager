@@ -24,7 +24,7 @@ const errorHandler = (err, req, res, next) => {
     }));
   }
 
-  // Mongoose duplicate key error (e.g. unique field conflict)
+  // Mongoose duplicate key error (e.g. unique email conflict)
   if (err.code === 11000) {
     statusCode = 409;
     const field = Object.keys(err.keyValue || {})[0] || 'field';
@@ -36,9 +36,16 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === 'CastError') {
     statusCode = 400;
     message = `Invalid format for ${err.path}`;
-    errors = [{ field: err.path, message: `Resource not found or invalid ID` }];
+    errors = [{ field: err.path, message: 'Resource not found or invalid ID' }];
   }
 
+  // Mask internal 500 error messages in production to prevent information disclosure
+  if (statusCode === 500 && process.env.NODE_ENV === 'production') {
+    message = 'Internal Server Error';
+    errors = [];
+  }
+
+  // Never expose stack trace in JSON response
   res.status(statusCode).json({
     message,
     errors,
@@ -49,4 +56,3 @@ module.exports = {
   notFoundHandler,
   errorHandler,
 };
-
