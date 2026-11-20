@@ -7,9 +7,11 @@ A full-stack, production-ready Lead Management web application built with **Reac
 ## Table of Contents
 
 - [Features](#features)
+- [Demo Credentials](#demo-credentials)
 - [Tech Stack & Architecture Decisions](#tech-stack--architecture-decisions)
 - [Folder Structure](#folder-structure)
 - [Local Setup & Getting Started](#local-setup--getting-started)
+- [Seed Demo Data](#seed-demo-data)
 - [API Reference](#api-reference)
 - [Database Design & Indexing Strategy](#database-design--indexing-strategy)
 - [Assumptions & Design Tradeoffs](#assumptions--design-tradeoffs)
@@ -33,7 +35,7 @@ A full-stack, production-ready Lead Management web application built with **Reac
 - **Input Validation on Both Ends**: Validated with Zod on the server and mirrored on the client with inline field error mapping.
 
 ### Bonus Features
-- **Authentication & User Data Isolation**: Secure signup and login using JWT and bcrypt. Users only see and manage their own leads (queries scoped to `req.user._id`; unauthorized requests return 404 to avoid leaking ID existence).
+- **Authentication & User Data Isolation**: Secure signup and login using JWT and bcrypt (password min 6 characters). Users only see and manage their own leads (queries scoped to `req.user._id`; unauthorized requests return 404 to avoid leaking ID existence).
 - **Server-Side Pagination & Sorting**: Whitelist sorting by `name`, `company`, `status`, and `createdAt` (asc/desc), with page navigation and automatic page reset when filters change.
 - **Dashboard Stat Cards**: Real-time aggregation cards displaying total leads and count per status. Clicking a card instantly filters the table by that status.
 - **Resilient UX**:
@@ -41,6 +43,20 @@ A full-stack, production-ready Lead Management web application built with **Reac
   - Distinct empty states for "No leads yet" vs "No results found for search/filter".
   - Network error banner with a one-click **Retry** action.
   - Brute-force rate limiting on auth endpoints (20 attempts per 15 min per IP).
+
+---
+
+## Demo Credentials
+
+For quick evaluation and testing without registering a new account:
+
+| Field | Value |
+|---|---|
+| **Email** | `lead@30gmail.com` |
+| **Password** | `Lead123` |
+
+> [!NOTE]
+> Run `npm run seed` in the `server/` directory to automatically provision this demo account and pre-populate 60 realistic leads.
 
 ---
 
@@ -88,6 +104,8 @@ lead-manager/
 │       ├── routes/
 │       │   ├── authRoutes.js       # /api/auth routes
 │       │   └── leadRoutes.js       # /api/leads routes (protected)
+│       ├── seed/
+│       │   └── seed.js             # Idempotent database seeder (60 sample leads + demo user)
 │       └── validators/
 │           ├── authSchema.js       # Zod schemas for signup and login
 │           └── leadSchema.js       # Zod schemas for create, update, and query params
@@ -122,7 +140,7 @@ lead-manager/
         └── pages/
             ├── Dashboard.jsx       # Main dashboard (stats, table, search, pagination)
             ├── Login.jsx           # Login page with field validation & error alerts
-            └── Signup.jsx          # Registration page with min-8 password check
+            └── Signup.jsx          # Registration page with min 6 characters password check
 ```
 
 ---
@@ -189,6 +207,45 @@ cd lead-manager
    npm run dev
    ```
 5. Open your browser and visit: **`http://localhost:5173`**
+
+---
+
+### Step 4: Seed Demo Data (Optional but Recommended)
+Populate 60 sample leads and provision the demo account:
+```bash
+cd server
+npm run seed
+```
+
+---
+
+## Seed Demo Data
+
+The application provides an idempotent seeding script at `server/src/seed/seed.js` to quickly test the pipeline with high-quality sample data.
+
+### How to Run:
+```bash
+cd server
+npm run seed
+```
+
+### What It Does:
+- **Environment & Connection**: Automatically loads `MONGO_URI` from `server/.env`.
+- **Demo Account Creation & Sync**: Creates (or reuses) the demo user:
+  - **Email**: `lead@30gmail.com`
+  - **Password**: `Lead123` (hashed with bcrypt via the User model)
+- **Strictly Idempotent**: Safely purges *only* this demo user's prior leads before inserting new ones. It never drops collections or modifies other users' records.
+- **60 Realistic Leads**:
+  - Mix of authentic Indian and international names and companies (`name@company.com` unique emails).
+  - Valid international phone numbers conforming to `/^\+?[0-9\s\-()]{7,20}$/`.
+  - Even distribution across all 6 lead sources: **Website**, **Referral**, **LinkedIn**, **Cold Call**, **Event**, **Other** (10 leads per source).
+  - Status breakdown optimized for dashboard visualization:
+    - **New**: 21 leads (~35%)
+    - **Contacted**: 15 leads (~25%)
+    - **Qualified**: 15 leads (~25%)
+    - **Lost**: 9 leads (~15%)
+  - Creation dates randomly distributed over the last 90 days with logically consistent updated timestamps.
+- **Graceful Termination**: Prints a summary report, cleanly closes the Mongoose connection, and exits with code `0`.
 
 ---
 
