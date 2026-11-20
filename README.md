@@ -156,7 +156,7 @@ lead-manager/
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/Dhruvil0420/TempProject.git lead-manager
+git clone https://github.com/Dhruvil0420/lead-manager.git
 cd lead-manager
 ```
 
