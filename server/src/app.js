@@ -72,9 +72,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API Routes
+// API Routes (mounted on both /api/* and /* for full URL resilience)
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
 app.use('/api/leads', leadRoutes);
+app.use('/leads', leadRoutes);
 
 // 404 Catch-all for unhandled routes
 app.use(notFoundHandler);
